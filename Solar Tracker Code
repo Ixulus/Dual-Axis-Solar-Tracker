@@ -1,0 +1,108 @@
+% Kyle Arnold
+% Final Project - Dual Axis Solar Tracker
+% 12/13/21
+
+% ServoUD -- Towards 0 is tilt BACK, Towards 1 is tilt FORWARD
+% ServoLR -- Towards 0 is rotate RIGHT, Towards 1 is rotate LEFT
+
+clear
+a = arduino();
+servoLR = servo(a, 'D11', 'MinPulseDuration', 1000*10^-6, 'MaxPulseDuration', 2000*10^-6) % Rotational Servo
+servoUD = servo(a, 'D10', 'MinPulseDuration', 1000*10^-6, 'MaxPulseDuration', 2000*10^-6) % Tilting Servo
+Tilt = 0.4;
+Rotate = 0.5; 
+TopL = "A0";    % Top Left Photoresistor
+TopR = "A2";    % Top Right Photoresistor
+BottomL = "A1"; % Bottom Left Photoresistor
+BottomR = "A3"; % Bottom Right Photoresistor
+
+while(1)
+    
+    
+    for i = 1:5                         % Run loop (i) times
+        
+        TL = readVoltage(a, TopL);      % Raw photoresistor readings 
+        TR = readVoltage(a, TopR);
+        BL = readVoltage(a, BottomL);
+        BR = readVoltage(a, BottomR);
+        
+        TopLeft = round(TL, 1);         % Rounded photoresistor readings
+        TopRight = round(TR, 1);
+        BottomLeft = round(BL, 1);
+        BottomRight = round(BR,1);
+        
+        voltsTL(i) = TopLeft;           % Collect readings into (i) cell array 
+        voltsTR(i) = TopRight;
+        voltsBL(i) = BottomLeft;
+        voltsBR(i) = BottomRight;
+        
+        avgTopLeft = mean(voltsTL)      % Find average value of the (i) amount of readings
+        avgTopRight = mean(voltsTR)
+        avgBottomLeft = mean(voltsBL)
+        avgBottomRight = mean(voltsBR)
+        
+        pause(0.25)                      % Wait 0.25 seconds between readings
+        
+    end
+   
+    
+    % -- Rotate Adjustments Below -- %
+    
+    if avgTopLeft < avgTopRight
+        Rotate = Rotate + 0.02;      
+    end
+    
+    if avgBottomLeft < avgBottomRight
+        Rotate = Rotate + 0.02;   
+    end
+    
+    if avgTopLeft > avgTopRight
+        Rotate = Rotate - 0.02;  
+    end
+    
+    if avgBottomLeft > avgBottomRight
+        Rotate = Rotate - 0.02;
+    end
+    
+    if Rotate > 1
+        Rotate = 1
+    end
+    
+    if Rotate < 0
+        Rotate = 0
+    end
+    
+    writePosition(servoLR, Rotate);
+    
+    % -- Tilt Adjustments Below -- %
+    
+    if avgTopLeft > avgBottomLeft
+        Tilt = Tilt - 0.02;
+    end
+    
+    if avgTopRight > avgBottomRight
+        Tilt = Tilt - 0.02;
+    end
+    
+    if avgTopLeft < avgBottomLeft
+        Tilt = Tilt + 0.02;
+    end
+    
+    if avgTopRight < avgBottomRight
+        Tilt = Tilt + 0.02;
+    end
+    
+    if Tilt < 0.2
+        Tilt = 0.2   
+    end
+    
+    if Tilt > 0.6
+        Tilt = 0.6
+    end
+    
+    writePosition(servoUD, Tilt);
+    
+    disp(Tilt)
+    disp(Rotate)
+end
+
